@@ -36,6 +36,14 @@ Members submit notes and homework (text and files). Each submission is posted by
 - A member gets a direct message with their booking time (Melbourne time). They must allow direct messages from server members in their Discord privacy settings.
 - When you approve homework or request changes, the bot posts the outcome in `OUTCOMES_CHANNEL_ID`, pings the member and includes your notes. If that channel is not set, it sends the member a DM instead.
 
+## Members overview
+The Members tab (owner only) lists each member with their progress, current lecture, last submission date and next 1-1. By default it shows members who have submitted work. To also list members who have not started, switch on **Server Members Intent** for your bot (Discord developer portal, Bot tab).
+
+## Content protection
+- **One device at a time:** when a member signs in somewhere new, their earlier session ends and they see a message on the connect page. You (the owner) are exempt.
+- **Unusual-activity alerts:** the bot messages you if one member signs in from 3 or more different IP addresses within 24 hours, or opens 8 or more different videos within 30 minutes. Each kind of alert is limited so it cannot spam you. Limits are set near the top of the Content protection section in `server.js`.
+- **Maintenance mode:** switch it on from your Profile page, or set `MAINTENANCE=on` on Render. Members see a back-soon page and you can still sign in and use the site. The Profile switch resets to the `MAINTENANCE` setting when the site restarts.
+
 ## Videos (optional, in code)
 Edit the `video` field of each lecture in `private/index.html`.
 

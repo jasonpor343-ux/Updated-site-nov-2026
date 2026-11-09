@@ -77,7 +77,11 @@ app.post("/auth/confirm", async (req, res) => {
       if (r.status !== 200) return res.json({ ok: false, error: "You are not in the Cartel server. Join it, then connect again." });
       if (!hasRole(await r.json())) return res.json({ ok: false, error: "You are in the server but do not have the required role." });
     }
-    req.session.user = { id: p.id, name: p.name, username: p.username, avatar: p.avatar };
+    if (maintenance && !isOwner(p.id)) return res.json({ ok: false, error: "We are making a few updates. Please check back soon." });
+    const sid = require("crypto").randomBytes(8).toString("hex");
+    if (!isOwner(p.id)) active.set(p.id, sid); // signing in here ends any earlier session for this member
+    req.session.user = { id: p.id, name: p.name, username: p.username, avatar: p.avatar, sid };
+    noteLogin(p, (req.ip || "").replace(/^::ffff:/, ""));
     delete req.session.pending;
     cache.set(p.id, { ok: true, at: Date.now() });
     res.json({ ok: true });
@@ -88,6 +92,8 @@ app.post("/auth/cancel", (req, res) => { delete req.session.pending; res.json({ 
 app.get("/api/me", async (req, res) => {
   const u = req.session.user;
   if (!u) return res.status(401).json(null);
+  if (maintenance && !isOwner(u.id)) return res.status(503).json({ reason: "maintenance" });
+  if (!sessionOk(u)) { delete req.session.user; return res.status(401).json({ reason: "otherdevice" }); }
   try {
     let c = cache.get(u.id);
     if (!c || Date.now() - c.at > 60000) {
@@ -96,7 +102,7 @@ app.get("/api/me", async (req, res) => {
       cache.set(u.id, c);
     }
     if (!c.ok) { req.session.user = null; return res.status(401).json(null); }
-    res.json({ ...me(u), ip: (req.ip || "").replace(/^::ffff:/, "") });
+    res.json({ ...me(u), ip: (req.ip || "").replace(/^::ffff:/, ""), maintenance: isOwner(u.id) ? maintenance : undefined });
   } catch (e) { res.status(502).json(null); }
 });
 
@@ -114,6 +120,10 @@ async function stillMember(u) {
 // The whole site is private: only verified members are sent the real page, everyone else gets the gate.
 app.get(["/", "/index.html"], async (req, res) => {
   res.set("Cache-Control", "no-store");
+  const su = req.session.user, pend = req.session.pending;
+  // In maintenance mode only the owner gets in. Others see the back-soon page.
+  if (maintenance && !(su && isOwner(su.id)) && !(pend && isOwner(pend.id))) return res.status(503).sendFile(path.join(__dirname, "public", "maintenance.html"));
+  if (su && !sessionOk(su)) delete req.session.user; // another device took over this account
   try {
     if (req.session.user && await stillMember(req.session.user)) return res.sendFile(path.join(__dirname, "private", "index.html"));
   } catch (e) {}
@@ -168,7 +178,12 @@ function removeRemote(b) {
   if (b.msg) fetch(`${API}/channels/${CH}/messages/${b.msg}`, { method: "DELETE", headers: H }).catch(() => {});
 }
 async function auth(req, res, next) {
-  try { const u = req.session.user; if (u && await stillMember(u)) return next(); } catch (e) {}
+  const u = req.session.user;
+  try {
+    if (u && maintenance && !isOwner(u.id)) return res.status(503).json({ ok: false, reason: "maintenance" });
+    if (u && !sessionOk(u)) { delete req.session.user; return res.status(401).json({ ok: false, reason: "otherdevice", error: "You were signed out because your account signed in on another device." }); }
+    if (u && await stillMember(u)) return next();
+  } catch (e) {}
   res.status(401).json({ ok: false, error: "Please connect your Discord again." });
 }
 
@@ -322,6 +337,48 @@ const prettyDay = d => new Date(d + "T00:00:00Z").toLocaleDateString("en-AU", { 
 const t12 = t => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "pm" : "am"}`; };
 const slotRange = t => { const [h, m] = t.split(":").map(Number), e = h * 60 + m + 30; return `${t12(t)} to ${t12(`${String(Math.floor(e / 60)).padStart(2, "0")}:${String(e % 60).padStart(2, "0")}`)}`; };
 
+// ---- Content protection: one device at a time, unusual-activity alerts, maintenance mode ----
+const active = new Map();    // member id -> the one session id allowed to be signed in
+const ipLog = new Map();     // member id -> [{ ip, at }] sign-ins in the last 24 hours
+const viewLog = new Map();   // member id -> Map(video key -> time) in the last 30 minutes
+const lastAlert = new Map(); // `${kind}:${member id}` -> time of the last alert, so one problem does not spam you
+let maintenance = String(E.MAINTENANCE || "").toLowerCase() === "on";
+const IP_LIMIT = 3, IP_WINDOW = 24 * 3600e3;       // alert at 3 different IP addresses within 24 hours
+const VIEW_LIMIT = 8, VIEW_WINDOW = 30 * 60e3;     // alert at 8 different videos within 30 minutes
+const sessionOk = u => isOwner(u.id) || active.get(u.id) === u.sid;
+function alertOnce(kind, uid, gap, text) {
+  const k = kind + ":" + uid, now = Date.now();
+  if (now - (lastAlert.get(k) || 0) < gap) return;
+  lastAlert.set(k, now);
+  notifyOwner(text).catch(() => {});
+}
+function noteLogin(u, ip) {
+  if (isOwner(u.id)) return;
+  const now = Date.now(), list = (ipLog.get(u.id) || []).filter(x => now - x.at < IP_WINDOW);
+  list.push({ ip, at: now });
+  ipLog.set(u.id, list);
+  const ips = [...new Set(list.map(x => x.ip))];
+  if (ips.length >= IP_LIMIT) alertOnce("ip", u.id, 6 * 3600e3, `⚠️ Unusual activity: **${u.name}** (@${u.username}) signed in from ${ips.length} different IP addresses in the last 24 hours: ${ips.join(", ")}`);
+}
+function noteView(u, key) {
+  if (isOwner(u.id)) return;
+  const now = Date.now(), m = viewLog.get(u.id) || new Map();
+  for (const [k, at] of m) if (now - at > VIEW_WINDOW) m.delete(k);
+  m.set(key, now);
+  viewLog.set(u.id, m);
+  if (m.size >= VIEW_LIMIT) alertOnce("views", u.id, 3600e3, `⚠️ Unusual activity: **${u.name}** (@${u.username}) opened ${m.size} different videos in the last 30 minutes.`);
+}
+app.post("/api/video-view", auth, (req, res) => {
+  const key = String(req.body.id || "");
+  if (/^[a-z0-9-]{1,60}$/.test(key)) noteView(req.session.user, key);
+  res.sendStatus(204);
+});
+app.post("/api/maintenance", auth, (req, res) => {
+  if (!isOwner(req.session.user.id)) return res.status(403).json({ ok: false });
+  maintenance = !!req.body.on;
+  res.json({ ok: true, on: maintenance });
+});
+
 // ---- Homework submissions: posted to a private Discord channel and reviewed by the owner ----
 const SCH = E.SUBMISSIONS_CHANNEL_ID;
 let subs = {}; // `${userId}:${lectureId}` -> { uid, lec, name, username, title, status, fb, at, msg }
@@ -424,6 +481,50 @@ app.post("/api/review", auth, async (req, res) => {
   } catch (e) { s.status = old.status; s.fb = old.fb; return res.json({ ok: false, error: "Could not save the review. Please try again." }); }
   notifyOutcome(s).catch(() => {});
   res.json({ ok: true });
+});
+
+// ---- Member overview (owner only): who is where in the course ----
+let rosterCache = { at: 0, list: null };
+async function roster() {
+  if (rosterCache.list && Date.now() - rosterCache.at < 60000) return rosterCache.list;
+  let list = [], after = "";
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch(`${API}/guilds/${E.GUILD_ID}/members?limit=1000${after ? "&after=" + after : ""}`, { headers: H });
+    if (!r.ok) return null; // needs the Server Members Intent to be switched on for the bot
+    const page = await r.json();
+    list = list.concat(page);
+    if (page.length < 1000) break;
+    after = page[page.length - 1].user.id;
+  }
+  rosterCache = { at: Date.now(), list };
+  return list;
+}
+function buildMembers(subsObj, bookingsArr, rosterList, owners, roleId, isPastFn) {
+  const by = {};
+  const get = (uid, name, username) => by[uid] || (by[uid] = { uid, name, username, approved: [], pending: [], rejected: [], last: 0, next: null });
+  for (const s of Object.values(subsObj)) {
+    const m = get(s.uid, s.name, s.username);
+    (m[s.status] || m.pending).push(s.lec);
+    if (s.at > m.last) m.last = s.at;
+  }
+  if (rosterList) for (const r of rosterList) {
+    if (r.user.bot || !(r.roles || []).includes(roleId)) continue;
+    const m = get(r.user.id, r.nick || r.user.global_name || r.user.username, r.user.username);
+    m.name = r.nick || r.user.global_name || r.user.username; m.username = r.user.username;
+  }
+  for (const b of bookingsArr) {
+    if (isPastFn(b.date, b.time)) continue;
+    const m = by[b.id];
+    if (m && (!m.next || b.date + b.time < m.next.date + m.next.time)) m.next = { date: b.date, time: b.time };
+  }
+  owners.forEach(id => delete by[id]);
+  return Object.values(by);
+}
+app.get("/api/members", auth, async (req, res) => {
+  if (!isOwner(req.session.user.id)) return res.status(403).json({ ok: false });
+  let list = null;
+  try { list = await roster(); } catch (e) {}
+  res.json({ roster: !!list, members: buildMembers(subs, bookings, list, OWNERS, E.REQUIRED_ROLE_ID, isPast) });
 });
 
 async function loadAll() {

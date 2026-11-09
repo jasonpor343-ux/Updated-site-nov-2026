@@ -141,6 +141,67 @@ textarea{width:100%;min-height:150px;margin-top:14px;background:var(--panel);bor
 .other .fsrow .btn{padding:6px 14px;font-size:13px;border-radius:8px}
 .pagetitle{margin-bottom:28px}
 .rlist{margin-top:34px}
+
+/* ---- polish: cleaner type, sticky left-hand lecture list, calmer spacing ---- */
+body{font-size:15px;line-height:1.55}
+header{position:sticky;top:0;z-index:30;padding:10px clamp(16px,2.2vw,40px);background:rgba(0,0,0,.86);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid #1a1a1a}
+.logo{font-size:24px;margin-right:12px}
+nav button,.right button{padding:8px 16px;font-size:15px;border-radius:8px}
+nav button[aria-current=page]{background:#141414;border-bottom-color:transparent;box-shadow:inset 0 -2px 0 #fff}
+.avatar{width:34px;height:34px;margin:0 2px 0 8px}
+.user{font-size:14px;margin-right:6px}
+.right .out{padding:7px 14px;font-size:14px}
+main#lectures{max-width:none;margin:24px 0 72px;padding:0 clamp(16px,2.2vw,40px);grid-template-columns:clamp(280px,19vw,360px) minmax(0,1fr);gap:clamp(24px,3vw,56px);align-items:start}
+aside{position:sticky;top:76px;max-height:calc(100vh - 100px);overflow-y:auto;padding:18px 14px;border-radius:16px;background:#070707}
+aside::-webkit-scrollbar{width:6px}
+aside::-webkit-scrollbar-thumb{background:#222;border-radius:3px}
+.head{padding:0 6px 6px}
+.head h2{font-size:18px}
+.head span{font-size:13px}
+.sec{margin-bottom:4px}
+.sec-btn{padding:10px 8px;font-size:15px}
+.sec-btn .num{font-size:15px;min-width:28px}
+.sec-btn .count{font-size:13px}
+.lec{padding:9px 10px;gap:10px;font-size:14.5px;border-radius:10px}
+.lec .num{font-size:11px;min-width:20px}
+.lec .d{font-size:11.5px;padding:2px 9px;border-radius:99px;background:#121212;letter-spacing:.03em}
+.lec .d:empty{display:none}
+.lec[aria-current=true]{background:#141414;border-color:#262626;box-shadow:inset 3px 0 0 #fff}
+#lec{width:100%;max-width:1040px;margin:0 auto}
+h1{font-size:clamp(26px,2.6vw,36px);font-weight:700;letter-spacing:-.02em;line-height:1.15}
+#lec h1{margin:22px 0 6px}
+.crumb{font-size:13.5px;margin:0 0 22px}
+.chip{font-size:12px;padding:2px 10px}
+.notes-h h3{font-size:17px}
+.saved{font-size:13px}
+textarea{font-size:15px;min-height:130px;border-radius:12px;padding:14px 16px;background:#080808}
+textarea:focus,.in:focus{outline:none;border-color:#6a6a6a}
+.btn{padding:9px 18px;font-size:14.5px}
+.card{padding:20px;border-radius:14px}
+.card h3{font-size:17px}
+.hw{margin-top:24px}
+.hw .prompt{font-size:14.5px}
+.fmts span{font-size:10.5px;padding:2px 7px}
+.vbox{border-radius:12px}
+.vwrap .vbox{border:1px solid #1a1a1a}
+.fsrow .btn{padding:6px 14px;font-size:13px;border-radius:8px}
+.other h2{font-size:18px}
+.recap h3{font-size:19px}
+@media(min-width:1900px){#lec{max-width:1180px}}
+@media(max-width:900px){main#lectures{grid-template-columns:1fr}aside{position:static;max-height:none}}
+.sec{margin-bottom:26px}
+.sec:last-child{margin-bottom:0}
+.sec-btn{margin-bottom:4px}
+.other.xwide{max-width:1200px}
+.mwrap{overflow-x:auto}
+.mtable{width:100%;border-collapse:collapse;font-size:14px}
+.mtable th{text-align:left;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);font-weight:500;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+.mtable td{padding:12px;border-bottom:1px solid #141414;vertical-align:top}
+.mtable small{display:block;color:var(--mute);font-size:12.5px;margin-top:3px}
+.pbar{height:6px;border-radius:3px;background:#1a1a1a;overflow:hidden;min-width:110px}
+.pbar i{display:block;height:100%;background:#fff}
+:root{--mark:#e8392d}
+.logo::after{content:"";display:inline-block;width:.17em;height:.17em;background:var(--mark);margin-left:.06em}
 </style>
 <script>
 (function(){
@@ -161,7 +222,7 @@ textarea{width:100%;min-height:150px;margin-top:14px;background:var(--panel);bor
   <div class="right">
     
     <button data-view="profile">Profile</button>
-    <button data-view="review" id="revbtn" hidden>Review</button><div class="avatar" id="avatar"></div><span class="user" id="uname">Guest</span>
+    <button data-view="members" id="membtn" hidden>Members</button><button data-view="review" id="revbtn" hidden>Review</button><div class="avatar" id="avatar"></div><span class="user" id="uname">Guest</span>
     <button class="out" data-view="signout">Sign out</button>
   </div>
 </header>
@@ -177,10 +238,12 @@ textarea{width:100%;min-height:150px;margin-top:14px;background:var(--panel);bor
 
 <script>
 // If the sign-in has expired (for example after the site restarted), go back to the connect screen.
-(function(){const f=window.fetch.bind(window);window.fetch=function(){return f.apply(null,arguments).then(function(r){if(r&&r.status===401)location.href="/";return r})}})();
+(function(){const f=window.fetch.bind(window);window.fetch=function(){return f.apply(null,arguments).then(function(r){
+  if(r&&(r.status===401||r.status===503)){r.clone().json().catch(function(){return null}).then(function(j){location.href="/"+(j&&j.reason==="otherdevice"?"?error=otherdevice":"")})}
+  return r})}})();
 const DATA=[
  {name:"Induction",items:[{t:"Introduction",video:"",hw:"Introduce yourself: your trading experience, what you want from the course and your biggest challenge right now."},{t:"Truth of The Markets",video:"",hw:"Elaborate on what you found important in this class and why it is important not to be mixed in with the retail traders of the market."}]},
- {name:"Candle Anatomy",items:[{id:"amd-basics",t:"AMD Fundamentals",video:"",hw:"Mark 5 different accumulations, manipulations and distributions on the chart."},{t:"Orderblocks",video:"",hw:"Mark 5 different orderblocks and 10 examples of SMTs and POIs."},{t:"Bias",video:"",hw:"Provide one example of a day and explain why price moved from point to point."},{t:"Weekly Candle",video:"",hw:"Mark 5 different weeks of price action, explaining how each day moved to form the weekly candle."}]},
+ {name:"Candle Anatomy",items:[{id:"amd-basics",t:"AMD Fundamentals",video:"",hw:"Mark 5 different accumulations, manipulations and distributions on the chart."},{t:"Liquidity Sweeps",video:"",hw:"Mark out 10 different liquidity sweeps on the chart."},{t:"Orderblocks",video:"",hw:"Mark 5 different orderblocks and 10 examples of SMTs and POIs."},{t:"Bias",video:"",hw:"Provide one example of a day and explain why price moved from point to point."},{t:"Weekly Candle",video:"",hw:"Mark 5 different weeks of price action, explaining how each day moved to form the weekly candle."}]},
  {name:"Entries",items:[{t:"Entry Criterias",video:"",hw:"Mark out 10 different entries following the criteria."},{t:"Cartel Continuations",video:"",hw:"Find 5 different examples of entries that follow the Cartel Continuations chain."},{t:"SMT Divergence",video:"",hw:"Mark 5 different SMTs on the chart."}]},
  {name:"Masterclass",items:[{id:"position-sizing",t:"Masterclass V1",video:"",hw:"Summarise the three most important lessons from Masterclass V1 and how you will apply them."}]},
 ];
@@ -238,6 +301,7 @@ function renderLec(){
   if(!unlocked(f)){
     box.innerHTML='<div class="vbox lockmsg"><div><h1 style="margin-top:0">Locked</h1><p>'+(dOK()?'Your previous lecture needs to be approved by the instructor before this one unlocks.':'Verify your Discord account to start the course.')+'</p>'+(dOK()?'':'<button class="btn" data-act="goprofile">Go to profile</button>')+'</div></div>';return;
   }
+  if(LV[f.id]||f.video)reportView(f.id);
   const isIntro=f.id==="introduction",hasText=isIntro||f.id==="position-sizing"||f.id==="truth-of-the-markets",hasFiles=!isIntro,r=sub(f.id),lockEdit=r.status==="pending"||r.status==="approved",rdy=()=>r.notes.trim().length>=20&&((hasText&&r.hw.trim().length>0)||(hasFiles&&hwf(f.id).length>0)),ready=rdy();
   box.innerHTML=videoHTML(f)+ownerVideoUI(f)+'<h1>'+esc(f.t)+'</h1><p class="crumb">Section '+(f.si+1)+': '+esc(f.sec)+' &middot; <span class="chip '+r.status+'">'+{draft:"Not submitted",pending:"In review",approved:"Approved",rejected:"Changes requested"}[r.status]+'</span></p>'
   +'<div class="notes-h"><h3>Your notes</h3><span class="saved" id="saved">Saves automatically</span></div>'
@@ -256,16 +320,18 @@ function profileHTML(){
   if(!m||!m.member)dc='<p>Type your Discord username. A bot checks that you have the right role in the server and unlocks the lectures automatically.</p><div class="row"><input class="in" id="dname" placeholder="Discord username" autocomplete="off"><button class="btn" data-act="verify">Verify</button></div><p class="fb" id="verr"></p>';
   else dc='<p><b>'+esc(m.name)+'</b> <span class="chip approved">Verified</span></p>';
   return '<h1>Profile</h1><div class="card"><h3>Discord</h3>'+dc+'</div><div class="card"><h3>Progress</h3><p>'+done+' of '+flat.length+' lectures completed.</p></div>'
-  +(S.owner?'<div class="card"><h3>Instructor</h3><p>Instructor mode is on for your Discord account.</p></div>':'');
+  +(S.owner?'<div class="card"><h3>Instructor</h3><p>Instructor mode is on for your Discord account.</p></div><div class="card"><h3>Maintenance mode</h3><p>'+(window.ME&&window.ME.maintenance?'Members currently see a back-soon page. You can still use the whole site.':'Switch this on while you update the site. Members will see a back-soon page and you can still use everything.')+'</p><button class="btn '+(window.ME&&window.ME.maintenance?'':'ghost')+'" data-act="mtoggle">'+(window.ME&&window.ME.maintenance?'Turn off':'Turn on')+'</button></div>':'');
 }
 function show(v){
   view=v;
   document.querySelectorAll("[data-view]").forEach(b=>b.removeAttribute("aria-current"));
   const nb=document.querySelector('#nav [data-view="'+v+'"]');if(nb)nb.setAttribute("aria-current","page");
-  $("lectures").hidden=v!=="lectures";$("other").hidden=v==="lectures";$("other").classList.toggle("wide",v==="book"||v==="breakdowns");
+  $("lectures").hidden=v!=="lectures";$("other").hidden=v==="lectures";$("other").classList.toggle("wide",v==="book"||v==="breakdowns"||v==="members");$("other").classList.toggle("xwide",v==="members");
   if(v==="lectures"){renderList();renderLec();return}
-  $("other").innerHTML=v==="profile"?profileHTML():v==="review"?reviewHTML():v==="book"?'<h1>Book a 1-1</h1><p>Loading…</p>':v==="breakdowns"?'<h1>PA Breakdown</h1><p>Loading…</p>':'<h1>'+copy[v][0]+'</h1><p>'+copy[v][1]+'</p>';
+  $("other").innerHTML=v==="profile"?profileHTML():v==="review"?reviewHTML():v==="book"?'<h1>Book a 1-1</h1><p>Loading…</p>':v==="members"?'<h1>Members</h1><p>Loading…</p>':v==="breakdowns"?'<h1>PA Breakdown</h1><p>Loading…</p>':'<h1>'+copy[v][0]+'</h1><p>'+copy[v][1]+'</p>';
+  if(v==="members"&&S.owner)loadMembers().then(()=>mr());
   if(v==="review"&&S.owner)loadReviews().then(()=>{if(view==="review"&&!rvopen)rr2()});
+  if(v==="breakdowns")reportView("pa-breakdown");
   if(v==="breakdowns")loadRecaps().then(()=>{if(view==="breakdowns")$("other").innerHTML=recapsHTML()});
   if(v==="book")loadBook().then(()=>{if(view==="book")$("other").innerHTML=bookHTML()});
 }
@@ -424,6 +490,8 @@ function ownerVideoUI(f){
 addEventListener("pagehide",()=>{try{navigator.sendBeacon("/api/leaving")}catch(e){}});
 addEventListener("pageshow",e=>{if(e.persisted)location.reload()});
 
+const rvSeen={};
+function reportView(id){const n=Date.now();if(rvSeen[id]&&n-rvSeen[id]<60000)return;rvSeen[id]=n;fetch("/api/video-view",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).catch(()=>{})}
 async function syncProgress(){
   let p;try{const r=await fetch("/api/my-progress");if(!r.ok)return{list:false,cur:false};p=await r.json()}catch(e){return{list:false,cur:false}}
   const snap=()=>flat.map(f=>sub(f.id).status+":"+sub(f.id).fb).join("|"),curSnap=()=>cur.id+":"+sub(cur.id).status+":"+sub(cur.id).fb+":"+unlocked(cur);
@@ -444,7 +512,7 @@ async function submitWork(btn){
   }catch(e){btn.disabled=false;say("Could not reach the server.")}
 }
 let RV=[],RVc=0,rvmsg="",rvopen=null,rvdet=null;
-function updRev(){$("revbtn").hidden=!S.owner;$("revbtn").textContent="Review"+(S.owner&&RVc?" ("+RVc+")":"")}
+function updRev(){$("membtn").hidden=!S.owner;$("revbtn").hidden=!S.owner;$("revbtn").textContent="Review"+(S.owner&&RVc?" ("+RVc+")":"")}
 async function loadReviews(){
   try{const r=await fetch("/api/reviews");RV=r.ok?await r.json():[];rvmsg=r.ok?"":"Could not load submissions."}catch(e){RV=[];rvmsg="Could not load submissions."}
   RVc=RV.filter(x=>x.status==="pending").length;updRev();
@@ -474,6 +542,43 @@ setInterval(async()=>{
   if(view==="lectures"){if(r.list)renderList();if(r.cur)renderLec()}
   if(S.owner){await loadReviews();if(view==="review"&&!rvopen)rr2()}
 },30000);
+
+let MB=[],MBroster=true,mbfilter="all",mbq="",mbmsg="";
+async function loadMembers(){try{const r=await fetch("/api/members");if(!r.ok){MB=[];mbmsg="Could not load members.";return}const d=await r.json();MB=d.members||[];MBroster=!!d.roster;mbmsg=""}catch(e){MB=[];mbmsg="Could not load members."}}
+const mr=()=>{if(view==="members")$("other").innerHTML=membersHTML()};
+function mbInfo(m){
+  const ap=new Set(m.approved),cur=flat.find(f=>!ap.has(f.id)),done=flat.filter(f=>ap.has(f.id)).length;
+  const st=!cur?"complete":m.pending.indexOf(cur.id)>=0?"pending":m.rejected.indexOf(cur.id)>=0?"rejected":"todo";
+  const days=m.last?Math.floor((Date.now()-m.last)/864e5):null,started=(m.approved.length+m.pending.length+m.rejected.length)>0;
+  return{done,cur,st,days,started,quiet:st!=="complete"&&m.last>0&&days>=14};
+}
+function mbTable(){
+  const q=mbq.trim().toLowerCase();
+  let L=MB.map(m=>({m,i:mbInfo(m)})).filter(x=>!q||(x.m.name+" "+x.m.username).toLowerCase().indexOf(q)>=0);
+  L=L.filter(x=>mbfilter==="all"||(mbfilter==="review"&&x.m.pending.length>0)||(mbfilter==="quiet"&&x.i.quiet)||(mbfilter==="notstarted"&&!x.i.started)||(mbfilter==="done"&&x.i.st==="complete"));
+  L.sort((a,b)=>(b.m.pending.length>0)-(a.m.pending.length>0)||(b.m.last-a.m.last));
+  if(!L.length)return '<p class="saved">No members match.</p>';
+  const date=t=>new Date(t).toLocaleDateString("en-AU",{day:"numeric",month:"short"});
+  const row=({m,i})=>{
+    const lab=i.st==="complete"?"Course complete":i.st==="pending"?"In review":i.st==="rejected"?"Changes requested":i.started?"Up next":"Not started";
+    const cls=i.st==="pending"?"pending":i.st==="rejected"?"rejected":i.st==="complete"?"approved":"";
+    return '<tr><td><b>'+esc(m.name)+'</b><small>@'+esc(m.username)+'</small></td>'
+    +'<td><div class="pbar"><i style="width:'+Math.round(i.done/flat.length*100)+'%"></i></div><small>'+i.done+' of '+flat.length+' approved</small></td>'
+    +'<td>'+(i.cur?esc(i.cur.t):'All lectures')+'<small><span class="chip '+cls+'">'+lab+'</span></small></td>'
+    +'<td>'+(m.last?date(m.last)+'<small>'+(i.days===0?"Today":i.days+" day"+(i.days===1?"":"s")+" ago")+(i.quiet?" · quiet":"")+'</small>':'<small>Nothing submitted</small>')+'</td>'
+    +'<td>'+(m.next?fmtDay(m.next.date)+'<small>'+slotLabel(m.next.time)+'</small>':'<small>None booked</small>')+'</td></tr>';
+  };
+  return '<div class="mwrap"><table class="mtable"><thead><tr><th>Member</th><th>Progress</th><th>Current lecture</th><th>Last submitted</th><th>Next 1-1</th></tr></thead><tbody>'+L.map(row).join("")+'</tbody></table></div>';
+}
+function membersHTML(){
+  const waiting=MB.filter(m=>m.pending.length>0).length;
+  const F=[["all","All"],["review","Waiting for review"],["quiet","Quiet 14+ days"],["notstarted","Not started"],["done","Completed"]];
+  return '<h1>Members</h1><p style="color:var(--mute);margin:0">'+MB.length+' member'+(MB.length===1?'':'s')+(waiting?' · '+waiting+' waiting for review':'')+'</p>'
+  +(MBroster?'':'<p class="saved" style="margin:8px 0 0">Showing members who have submitted work. To also list members who haven\u2019t started, turn on Server Members Intent for your bot in the Discord developer portal.</p>')
+  +(mbmsg?'<p class="saved" role="status">'+esc(mbmsg)+'</p>':'')
+  +'<div class="row" style="margin:18px 0 14px;justify-content:flex-start"><input class="in" id="mbq" placeholder="Search by name or handle" value="'+esc(mbq)+'" style="min-width:260px">'+F.map(f=>'<button class="btn '+(mbfilter===f[0]?'':'ghost')+'" data-act="mbf" data-f="'+f[0]+'" style="padding:7px 14px;font-size:13.5px">'+f[1]+'</button>').join("")+'</div><div id="mbtable">'+mbTable()+'</div>';
+}
+document.addEventListener("input",e=>{if(e.target&&e.target.id==="mbq"){mbq=e.target.value;$("mbtable").innerHTML=mbTable()}});
 document.addEventListener("input",e=>{if(e.target&&e.target.id==="bnote")bnote=e.target.value});
 document.addEventListener("click",e=>{
   const v=e.target.closest("[data-view]");if(v&&v.dataset.view==="signout"){fetch("/api/logout",{method:"POST"}).finally(()=>{location.href="/"});return}if(v){show(v.dataset.view);return}
@@ -489,6 +594,8 @@ document.addEventListener("click",e=>{
   else if(a==="bpick"){bpick=b.dataset.t;rb()}
   else if(a==="bconfirm"){if(!bnote.trim()){bmsg="Please say what the 1-1 is for.";rb();return}bookCall("/api/book",{date:bsel,time:bpick,note:bnote.trim()},"Booked. See you then.")}
   else if(a==="bcancel")bookCall("/api/cancel",{date:b.dataset.d,time:b.dataset.t},"Booking cancelled.");
+  else if(a==="mtoggle"){fetch("/api/maintenance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({on:!(window.ME&&window.ME.maintenance)})}).then(r=>r.json()).then(j=>{if(j.ok){window.ME.maintenance=j.on;show("profile")}}).catch(()=>{})}
+  else if(a==="mbf"){mbfilter=b.dataset.f;mr()}
   else if(a==="submit")submitWork(b);
   else if(a==="rview"){rvopen=b.dataset.u+":"+b.dataset.l;rvdet=null;rr2();fetch("/api/reviews/detail?uid="+encodeURIComponent(b.dataset.u)+"&lec="+encodeURIComponent(b.dataset.l)).then(r=>r.ok?r.json():{notes:"Could not load this submission.",files:[]}).then(d=>{rvdet=d;rr2()}).catch(()=>{rvdet={notes:"Could not load this submission.",files:[]};rr2()})}
   else if(a==="rapprove")reviewCall("approve",b.dataset.u,b.dataset.l);

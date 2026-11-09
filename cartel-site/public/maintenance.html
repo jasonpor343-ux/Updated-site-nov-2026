@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>cartel</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@800&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--mark:#e8392d}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#000;color:#fff;font:400 16px/1.5 Inter,system-ui,sans-serif;padding:24px;text-align:center}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+main{width:100%;max-width:380px;position:relative;z-index:1}
+main::before{content:"";position:absolute;inset:-90px -60px;background:radial-gradient(closest-side,rgba(0,0,0,.88),rgba(0,0,0,0));z-index:-1}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.logo,.rule,h1,p,a{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+.rule{animation-delay:.1s}h1{animation-delay:.2s}p{animation-delay:.3s}a{animation-delay:.45s}
+@media(prefers-reduced-motion:reduce){.logo,.rule,h1,p,a{animation:none}}
+.logo{font:800 40px Unbounded,sans-serif;letter-spacing:-.02em;margin:0 0 26px}
+.logo::after{content:"";display:inline-block;width:.17em;height:.17em;background:var(--mark);margin-left:.06em}
+.rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 0 22px}
+.rule i{width:56px;height:1px;background:#333}
+.rule b{width:5px;height:5px;background:#fff}
+h1{font:500 12px Inter,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#8c8c8c;margin:0 0 22px}
+p{font:400 15px/1.7 Inter,system-ui,sans-serif;color:#a8a8a8;max-width:300px;margin:0 auto 34px}
+a{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#4a4a4a;text-decoration:none}
+a:hover{color:#8c8c8c}
+</style></head>
+<body><canvas id="bg" aria-hidden="true"></canvas><main>
+<div class="logo">cartel</div>
+<div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
+<h1>Back soon</h1>
+<p>We are making a few updates. Please check back shortly.</p>
+<a href="/auth/discord">Owner access</a>
+</main>
+<script>
+function startBg(c){
+  const x=c.getContext("2d"),reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let w,h,dots=[],raf,mx=-999,my=-999;
+  function size(){const r=devicePixelRatio||1;w=c.clientWidth;h=c.clientHeight;c.width=w*r;c.height=h*r;x.setTransform(r,0,0,r,0,0);const n=Math.round(Math.min(90,w*h/16000));dots=Array.from({length:n},()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,r:Math.random()*1.2+.4}))}
+  function draw(){
+    x.clearRect(0,0,w,h);
+    for(const d of dots){if(!reduce){d.x+=d.vx;d.y+=d.vy;if(d.x<0||d.x>w)d.vx*=-1;if(d.y<0||d.y>h)d.vy*=-1}x.fillStyle="rgba(255,255,255,.7)";x.beginPath();x.arc(d.x,d.y,d.r,0,6.283);x.fill()}
+    for(let i=0;i<dots.length;i++)for(let j=i+1;j<dots.length;j++){const a=dots[i],b=dots[j],dx=a.x-b.x,dy=a.y-b.y,q=dx*dx+dy*dy;if(q<14400){x.strokeStyle="rgba(255,255,255,"+(.18*(1-q/14400))+")";x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke()}}
+    for(const d of dots){const dx=d.x-mx,dy=d.y-my,q=dx*dx+dy*dy;if(q<22500){x.strokeStyle="rgba(255,255,255,"+(.35*(1-q/22500))+")";x.beginPath();x.moveTo(d.x,d.y);x.lineTo(mx,my);x.stroke()}}
+    if(!reduce)raf=requestAnimationFrame(draw);
+  }
+  size();draw();
+  addEventListener("resize",()=>{size();if(reduce)draw()});
+  addEventListener("mousemove",e=>{mx=e.clientX;my=e.clientY});
+  document.addEventListener("visibilitychange",()=>{if(reduce)return;cancelAnimationFrame(raf);if(!document.hidden)draw()});
+}
+startBg(document.getElementById("bg"));
+</script></body></html>

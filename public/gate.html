@@ -23,7 +23,7 @@ main::before{content:"";position:absolute;inset:-90px -60px;background:radial-gr
 .logo,h1,main>p,.btn{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
 h1{animation-delay:.15s}main>p{animation-delay:.25s}.btn{animation-delay:.35s}
 @media(prefers-reduced-motion:reduce){.logo,h1,main>p,.btn{animation:none}}
-.who{display:flex;align-items:center;gap:14px;justify-content:center;margin:0 0 20px;font-size:16px}
+.who{display:flex;align-items:center;gap:14px;justify-content:center;margin:0 0 28px;font-size:16px}
 .who img{border-radius:50%;background:#1a1a1a}
 .alt{background:none;color:#666;width:auto;padding:0;margin-top:20px;font:500 11px Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;text-decoration:none}
 .alt:hover{color:#999}
@@ -40,6 +40,8 @@ h1{animation-delay:.15s}main>p{animation-delay:.25s}.btn{animation-delay:.35s}
 .rule{animation-delay:.1s}#connect p{animation-delay:.25s}.foot{animation-delay:.45s}
 @media(prefers-reduced-motion:reduce){.rule,#connect p,.foot{animation:none}}
 #err{color:#fff;min-height:24px;margin:14px 0 0}
+:root{--mark:#e8392d}
+.logo::after{content:"";display:inline-block;width:.17em;height:.17em;background:var(--mark);margin-left:.06em}
 </style><script>
 (function(){
   var ua=navigator.userAgent,tp=navigator.maxTouchPoints||0,
@@ -59,14 +61,13 @@ h1{animation-delay:.15s}main>p{animation-delay:.25s}.btn{animation-delay:.35s}
 <div class="rule" aria-hidden="true"><i></i><b></b><i></i></div>
 <h1>Authorise to verify</h1>
 <div class="who"><img id="av" alt="" width="56" height="56"><b id="nm"></b></div>
-<p>Clicking the button below verifies whether you have access to the site.</p>
 <button id="ok">Verify</button>
 <button class="alt" id="other">Use a different account</button>
 </div>
 <div id="err" role="status"></div>
 </main>
 <script>
-const M={notmember:"You are not in the Cartel server. Join it, then connect again.",norole:"You are in the server but do not have the required role.",expired:"Your sign-in expired. Try again.",failed:"Discord sign-in failed. Try again."};
+const M={notmember:"You are not in the Cartel server. Join it, then connect again.",norole:"You are in the server but do not have the required role.",expired:"Your sign-in expired. Try again.",failed:"Discord sign-in failed. Try again.",otherdevice:"You were signed out because this account signed in on another device."};
 const e=new URLSearchParams(location.search).get("error");
 if(e)document.getElementById("err").textContent=M[e]||M.failed;
 function startBg(c){

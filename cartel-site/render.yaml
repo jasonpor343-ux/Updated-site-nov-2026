@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: cartel
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: GUILD_ID
+        sync: false
+      - key: REQUIRED_ROLE_ID
+        sync: false
+      - key: OWNER_IDS
+        sync: false
+      - key: BOOKINGS_CHANNEL_ID
+        sync: false
+      - key: PA_CHANNEL_ID
+        sync: false
+      - key: SUBMISSIONS_CHANNEL_ID
+        sync: false
+      - key: OUTCOMES_CHANNEL_ID
+        sync: false
+      - key: ALERTS_CHANNEL_ID
+        sync: false
+      - key: MAINTENANCE
+        sync: false
+      - key: BASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
